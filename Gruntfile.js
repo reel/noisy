@@ -158,8 +158,8 @@ module.exports = function(grunt) {
         grunt.task.run(
             'css',
             'eslint',
-            'browserify',
-            'jasmine:pivotal'
+            'browserify'
+            //'jasmine:pivotal'
         );
     });
     grunt.registerTask('serve', [], function() {

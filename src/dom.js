@@ -1,21 +1,23 @@
-var createTree = (player) => {
-    let root = document.querySelector(player.options.targetElement),
+var createTree = (target, active, id) => {
+    let root = document.querySelector(target),
         dom = {},
-        docFrag = document.createDocumentFragment();
+        docFrag = document.createDocumentFragment(),
+        display = active ? '' : ' hidden';
+    console.log(display);
     dom.container = newNode("div", docFrag, {
-        id: "nsycontainer" +  player.id,
-        class: "video-container"
+        id: "nsycontainer" +  id,
+        class: "video-container" + display,
     });
     dom.video = newNode("video", dom.container, {
-        id: "nsyvideo" +  player.id,
+        id: "nsyvideo" +  id,
         class: "video"
     });
     dom.controls = newNode("div", dom.container, {
-        id: "nsycontrols" +  player.id,
+        id: "nsycontrols" +  id,
         class: "video-control-bar"
     });
     dom.play = newNode("button", dom.controls, {
-        id: "nsyplay" +  player.id,
+        id: "nsyplay" +  id,
         class: "play-control video-control",
         tabindex: "0",
         role: "button",
@@ -23,16 +25,16 @@ var createTree = (player) => {
         'aria-live': "polite"
     });
     dom.mute = newNode("button", dom.controls, {
-        id: "nsymute" +  player.id,
+        id: "nsymute" +  id,
         class: "sound-control video-control low",
         tabindex: "0",
         role: "button",
         type: "button",
         'aria-live': "polite"
     });
-    
+
     dom.volume = newNode("input", dom.controls, {
-        id: "nsyvolume" +  player.id,
+        id: "nsyvolume" +  id,
         class: "input-range video-control volume-bar",
         'type': "range",
         'value': "0",
@@ -40,7 +42,7 @@ var createTree = (player) => {
         'max': "100"
     });
     dom.progress = newNode("input", dom.controls, {
-        id: "nsyprogress" +  player.id,
+        id: "nsyprogress" +  id,
         class: "input-range video-control seek-bar",
         'type': "range",
         'value': "0",
@@ -48,7 +50,7 @@ var createTree = (player) => {
         'max': "100"
     });
     dom.fullScreen = newNode("button", dom.controls, {
-        id: "fullScreen" +  player.id,
+        id: "fullScreen" +  id,
         class: "fullScreen-control video-control",
         tabindex: "0",
         role: "button",

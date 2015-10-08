@@ -293,3 +293,9 @@
         width: 40%;
     }
 }
+@media (min-width: 1px) {
+    div.hidden {
+        display: none !important;
+        visibility: hidden !important;
+    }
+}

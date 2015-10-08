@@ -80,36 +80,38 @@ describe("The player constructor", function () {
 });
 
 },{"../src/index.js":3}],2:[function(require,module,exports){
-"use strict";
+'use strict';
 
 exports.__esModule = true;
-var createTree = function createTree(player) {
-    var root = document.querySelector(player.options.targetElement),
+var createTree = function createTree(target, active, id) {
+    var root = document.querySelector(target),
         dom = {},
-        docFrag = document.createDocumentFragment();
+        docFrag = document.createDocumentFragment(),
+        display = active ? '' : ' hidden';
+    console.log(display);
     dom.container = newNode("div", docFrag, {
-        id: "nsycontainer" + player.id,
-        "class": "video-container"
+        id: "nsycontainer" + id,
+        'class': "video-container" + display
     });
     dom.video = newNode("video", dom.container, {
-        id: "nsyvideo" + player.id,
-        "class": "video"
+        id: "nsyvideo" + id,
+        'class': "video"
     });
     dom.controls = newNode("div", dom.container, {
-        id: "nsycontrols" + player.id,
-        "class": "video-control-bar"
+        id: "nsycontrols" + id,
+        'class': "video-control-bar"
     });
     dom.play = newNode("button", dom.controls, {
-        id: "nsyplay" + player.id,
-        "class": "play-control video-control",
+        id: "nsyplay" + id,
+        'class': "play-control video-control",
         tabindex: "0",
         role: "button",
         type: "button",
         'aria-live': "polite"
     });
     dom.mute = newNode("button", dom.controls, {
-        id: "nsymute" + player.id,
-        "class": "sound-control video-control low",
+        id: "nsymute" + id,
+        'class': "sound-control video-control low",
         tabindex: "0",
         role: "button",
         type: "button",
@@ -117,24 +119,24 @@ var createTree = function createTree(player) {
     });
 
     dom.volume = newNode("input", dom.controls, {
-        id: "nsyvolume" + player.id,
-        "class": "input-range video-control volume-bar",
+        id: "nsyvolume" + id,
+        'class': "input-range video-control volume-bar",
         'type': "range",
         'value': "0",
         'min': "0",
         'max': "100"
     });
     dom.progress = newNode("input", dom.controls, {
-        id: "nsyprogress" + player.id,
-        "class": "input-range video-control seek-bar",
+        id: "nsyprogress" + id,
+        'class': "input-range video-control seek-bar",
         'type': "range",
         'value': "0",
         'min': "0",
         'max': "100"
     });
     dom.fullScreen = newNode("button", dom.controls, {
-        id: "fullScreen" + player.id,
-        "class": "fullScreen-control video-control",
+        id: "fullScreen" + id,
+        'class': "fullScreen-control video-control",
         tabindex: "0",
         role: "button",
         type: "button",
@@ -188,7 +190,8 @@ var Noisy = (function () {
 
         this.bootstrap(opts);
         this.create();
-        this.bindEnv();
+        // add bindings for user-provided controls
+        //this.bindEnv();
     }
 
     Noisy.prototype.bootstrap = function bootstrap(opts) {
@@ -200,7 +203,8 @@ var Noisy = (function () {
             playerElement: '#player_' + this.id,
             targetElement: null,
             width: 640,
-            height: 360
+            height: 360,
+            type: 'video'
 
         };
         this.options = _utils.checkOpts(defaultOpts, opts);
@@ -208,89 +212,89 @@ var Noisy = (function () {
             throw 'you should provide a target where the player will be inserted';
         }
         this.ready = this.id;
-        this.isPlaying = false;
-        this.isSeeking = false;
+        this.players = [];
+        this.active = null;
+        this.whole = true;
+        this.queue = [];
+        this.behaving = true;
+        this.robbing = false;
+        this.playing = false;
+        this.seeking = false;
     };
 
     Noisy.prototype.create = function create() {
-        if (this.ready !== this.id) {
-            throw "something went horribly wrong";
-        }
-        this.dom = _dom.createTree(this);
+        this.players[0] = new Agastopia(this, 0, true);
+        this.players[1] = new Agastopia(this, 1, false);
+        this.active = 0;
+    };
+
+    Noisy.prototype.delegate = function delegate() {
+        return this.players[this.active];
+    };
+
+    Noisy.prototype.reflect = function reflect() {
+        return this.players[!this.active];
+    };
+
+    Noisy.prototype.next = function next() {
+        return (this.active + 1) % this.players.length;
     };
 
     Noisy.prototype.play = function play() {
-        var _this = this;
-
         var src = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
 
-        if (!this.dom.video.src && !src) {
-            return false;
-        }
-        if (src) {
-            this.dom.video.src = src;
-        }
-        this.dom.play.className = 'play-control video-control playing';
-        this.isPlaying = true;
-        setTimeout(function () {
-            _this.dom.video.play();
-        }, 150);
+        this.delegate().mount(src);
+        this.delegate().play();
     };
 
     Noisy.prototype.pause = function pause() {
-        this.dom.play.className = 'play-control video-control';
-        this.isPlaying = false;
-        this.dom.video.pause();
+        this.delegate().play();
     };
 
-    Noisy.prototype.hasEnded = function hasEnded() {
-        this.dom.play.className = 'play-control video-control';
-        this.dom.video.currentTime = 0;
-        this.isPlaying = false;
+    Noisy.prototype.setVolume = function setVolume(vol) {
+        var id = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+        if (!id) {
+            dictate('volume', vol);
+        } else {}
     };
 
-    Noisy.prototype.updateVolumeIcon = function updateVolumeIcon() {
-        if (this.dom.video.volume > 0.66) {
-            this.dom.mute.className = "sound-control video-control high";
-        } else if (this.dom.video.volume > 0.33) {
-            this.dom.mute.className = "sound-control video-control mid";
-        } else if (this.dom.video.volume > 0) {
-            this.dom.mute.className = "sound-control video-control low";
-        } else {
-            this.dom.mute.className = "sound-control video-control muted";
+    Noisy.prototype.dictate = function dictate(prop, value) {
+        for (i = this.players.length - 1; i >= 0; i--) {
+            this.players[i][prop] = value;
         }
     };
 
-    Noisy.prototype.toggleFullScreen = function toggleFullScreen() {
-        if (this.dom.video && // alternative standard method
-        !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-            // current working methods
-            if (this.dom.video.requestFullscreen) {
-                this.dom.video.requestFullscreen();
-            } else if (this.dom.video.msRequestFullscreen) {
-                this.dom.video.msRequestFullscreen();
-            } else if (this.dom.video.mozRequestFullScreen) {
-                this.dom.video.mozRequestFullScreen();
-            } else if (this.dom.video.webkitRequestFullscreen) {
-                this.dom.video.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
-            }
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();
-            } else if (document.mozCancelFullScreen) {
-                document.mozCancelFullScreen();
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            }
-        }
+    return Noisy;
+})();
+
+var Agastopia = (function () {
+    function Agastopia(parent, ref, active) {
+        _classCallCheck(this, Agastopia);
+
+        this.id = _utils.randomizer();
+        this.ref = ref;
+        this.parent = parent;
+        this.active = active;
+        this.playing = false;
+        this.whole = true;
+        this.behaving = true;
+        this.robbing = false;
+        this.target = parent.options.targetElement;
+        this.dom = null;
+        this.create(this.target);
+        this.binder();
+    }
+
+    Agastopia.prototype.create = function create() {
+        this.dom = _dom.createTree(this.target, this.active, this.id);
     };
 
-    Noisy.prototype.bindEnv = function bindEnv() {
+    Agastopia.prototype.binder = function binder() {
         var self = this;
         this.dom.play.addEventListener('click', function () {
-            if (self.isPlaying) {
+            console.log('tririri');
+            if (self.playing) {
                 self.pause();
             } else {
                 self.play();
@@ -340,7 +344,76 @@ var Noisy = (function () {
         });
     };
 
-    return Noisy;
+    Agastopia.prototype.updateVolumeIcon = function updateVolumeIcon() {
+        if (this.dom.video.volume > 0.66) {
+            this.dom.mute.className = "sound-control video-control high";
+        } else if (this.dom.video.volume > 0.33) {
+            this.dom.mute.className = "sound-control video-control mid";
+        } else if (this.dom.video.volume > 0) {
+            this.dom.mute.className = "sound-control video-control low";
+        } else {
+            this.dom.mute.className = "sound-control video-control muted";
+        }
+    };
+
+    Agastopia.prototype.toggleFullScreen = function toggleFullScreen() {
+        if (this.dom.video && // alternative standard method
+        !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+            // current working methods
+            if (this.dom.video.requestFullscreen) {
+                this.dom.video.requestFullscreen();
+            } else if (this.dom.video.msRequestFullscreen) {
+                this.dom.video.msRequestFullscreen();
+            } else if (this.dom.video.mozRequestFullScreen) {
+                this.dom.video.mozRequestFullScreen();
+            } else if (this.dom.video.webkitRequestFullscreen) {
+                this.dom.video.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
+    };
+
+    Agastopia.prototype.ended = function ended(ref) {
+        this.dom.play.className = 'play-control video-control';
+        this.dom.video.currentTime = 0;
+        this.isPlaying = false;
+    };
+
+    Agastopia.prototype.play = function play() {
+        var _this = this;
+
+        this.playing = true;
+        setTimeout(function () {
+            _this.dom.play.className = 'play-control video-control playing';
+            _this.dom.video.play();
+        }, 50);
+    };
+
+    Agastopia.prototype.pause = function pause() {
+        this.dom.play.className = 'play-control video-control';
+        this.playing = false;
+        this.dom.video.pause();
+    };
+
+    Agastopia.prototype.mount = function mount() {
+        var src = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+
+        if (this.dom.video.src && !src || this.dom.video.src === src) {
+            return false;
+        }
+        this.dom.video.src = src;
+    };
+
+    return Agastopia;
 })();
 
 exports['default'] = Noisy;
