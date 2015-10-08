@@ -3,7 +3,6 @@ var createTree = (target, active, id) => {
         dom = {},
         docFrag = document.createDocumentFragment(),
         display = active ? '' : ' hidden';
-    console.log(display);
     dom.container = newNode("div", docFrag, {
         id: "nsycontainer" +  id,
         class: "video-container" + display,

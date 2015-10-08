@@ -16,6 +16,7 @@ class Noisy {
     constructor(opts = {}) {
         this.bootstrap(opts);
         this.create();
+        this.events();
         // add bindings for user-provided controls
         //this.bindEnv();
     };
@@ -51,6 +52,35 @@ class Noisy {
         this.players[1] = new Agastopia(this, 1, false);
         this.active = 0;
     };
+    events() {
+        this.evt = {
+            play: [],
+            pause: [],
+            ended: [],
+            seek: [],
+            time: [],
+            mute: [],
+            volume: [],
+            fullscreen: []
+        }
+    }
+    trigger(event, opts) {
+        if (this.evt.hasOwnProperty(event)) {
+            this.evt[event].forEach((e) => (e)(opts));
+        }
+    };
+    on(event, opts) {
+        if (this.evt.hasOwnProperty(event) && typeof opts === 'function') {
+            this.evt[event].forEach(function (i) {
+                if (i == opts) {
+                    console.log('doubling');
+                }
+            });
+            this.evt[event].push(opts);
+        } else {
+            throw event + ' failed to register';
+        }
+    }
     delegate() {
         return this.players[this.active];
     }
@@ -99,10 +129,12 @@ class Agastopia {
     create() {
         this.dom = createTree(this.target, this.active, this.id);
     }
+    shout(event, value) {
+        this.parent.trigger(event, value);
+    }
     binder() {
         let self = this;
         this.dom.play.addEventListener('click', function() {
-            console.log('tririri');
             if (self.playing) {
                 self.pause()
             } else {
@@ -110,6 +142,8 @@ class Agastopia {
             }
         });
         this.dom.video.ontimeupdate = function() {
+            self.shout('time', self.dom.video.currentTime);
+
             if (!self.isSeeking) {
                 self.dom.progress.value = self.dom.video.currentTime;
             }

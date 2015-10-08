@@ -7,7 +7,6 @@ var createTree = function createTree(target, active, id) {
         dom = {},
         docFrag = document.createDocumentFragment(),
         display = active ? '' : ' hidden';
-    console.log(display);
     dom.container = newNode("div", docFrag, {
         id: "nsycontainer" + id,
         'class': "video-container" + display
@@ -109,6 +108,7 @@ var Noisy = (function () {
 
         this.bootstrap(opts);
         this.create();
+        this.events();
         // add bindings for user-provided controls
         //this.bindEnv();
     }
@@ -145,6 +145,40 @@ var Noisy = (function () {
         this.players[0] = new Agastopia(this, 0, true);
         this.players[1] = new Agastopia(this, 1, false);
         this.active = 0;
+    };
+
+    Noisy.prototype.events = function events() {
+        this.evt = {
+            play: [],
+            pause: [],
+            ended: [],
+            seek: [],
+            time: [],
+            mute: [],
+            volume: [],
+            fullscreen: []
+        };
+    };
+
+    Noisy.prototype.trigger = function trigger(event, opts) {
+        if (this.evt.hasOwnProperty(event)) {
+            this.evt[event].forEach(function (e) {
+                return e(opts);
+            });
+        }
+    };
+
+    Noisy.prototype.on = function on(event, opts) {
+        if (this.evt.hasOwnProperty(event) && typeof opts === 'function') {
+            this.evt[event].forEach(function (i) {
+                if (i == opts) {
+                    console.log('doubling');
+                }
+            });
+            this.evt[event].push(opts);
+        } else {
+            throw event + ' failed to register';
+        }
     };
 
     Noisy.prototype.delegate = function delegate() {
@@ -209,10 +243,13 @@ var Agastopia = (function () {
         this.dom = _dom.createTree(this.target, this.active, this.id);
     };
 
+    Agastopia.prototype.shout = function shout(event, value) {
+        this.parent.trigger(event, value);
+    };
+
     Agastopia.prototype.binder = function binder() {
         var self = this;
         this.dom.play.addEventListener('click', function () {
-            console.log('tririri');
             if (self.playing) {
                 self.pause();
             } else {
@@ -220,6 +257,8 @@ var Agastopia = (function () {
             }
         });
         this.dom.video.ontimeupdate = function () {
+            self.shout('time', self.dom.video.currentTime);
+
             if (!self.isSeeking) {
                 self.dom.progress.value = self.dom.video.currentTime;
             }
