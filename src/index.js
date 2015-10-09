@@ -15,10 +15,9 @@ from './dom'
 class Noisy {
     constructor(opts = {}) {
         this.bootstrap(opts);
-        this.create();
         this.events();
-        // add bindings for user-provided controls
-        //this.bindEnv();
+        this.binder();
+        this.create();
     };
     bootstrap(opts) {
         this.id = randomizer();
@@ -66,8 +65,32 @@ class Noisy {
             fullscreen: []
         }
     }
-    trigger(event, opts) {
-        if (this.evt.hasOwnProperty(event)) {
+    binder() {
+        let self = this;
+        this.on('volume', function (vol) {
+            self.reflect().volume(vol);
+        });
+        this.on('ended', function () {
+            if (self.delegate().playing && self.reflect().mounted) {
+                self.toggle();
+                self.reflect().dom.video.src = '';
+                self.delegate().play();
+            } else {
+                self.delegate().dom.video.src = '';
+                self.delegate().pause();
+            }
+            self.handleQueue();
+        })
+
+    }
+    toggle() {
+        this.delegate().toggle();
+        this.reflect().toggle();
+        this.active = this.next();
+    }
+    trigger(ref, event, opts) {
+        // prevent inactive player from bubbling...
+        if (this.evt.hasOwnProperty(event) && ref === this.active) {
             this.evt[event].forEach((e) => (e)(opts));
         }
     };
@@ -87,29 +110,51 @@ class Noisy {
         return this.players[this.active];
     }
     reflect() {
-        return this.players[!this.active];
+        return this.players[this.next()];
     }
     next() {
         return (this.active + 1) % this.players.length;
     }
-    play(src = null) {
-        this.delegate().mount(src)
-        this.delegate().play();
+    play() {
+        this.handleQueue();
     }
     pause() {
         this.delegate().play();
     }
-    setVolume(vol, id = null) {
-        if (!id) {
-            dictate('volume', vol);
-        } else {
-
-        }
+    mute() {
+        this.delegate().mute();
+    }
+    volume(vol) {
+        this.delegate().volume(vol);
     }
     dictate(prop, value) {
         for (i = this.players.length - 1; i >= 0; i--) {
             this.players[i][prop] = value;
         }
+    }
+    mount(playlist = null) {
+        // need to add some serious checks here
+        if (playlist === null) {
+            throw 'cannot mount an empty playlist';
+        }
+        for (let i of playlist) {
+            this.queue.push(i);
+        }
+        this.handleQueue();
+    }
+    handleQueue() {
+        if (this.queue.length < 1) {
+            return;
+        }
+        if (!this.delegate().playing) {
+            this.delegate().mount(this.queue.shift());
+            this.delegate().play();
+        } else if (!this.reflect().mounted){
+            this.reflect().mount(this.queue.shift());
+        } else {
+            return;
+        }
+        this.handleQueue();
     }
 }
 
@@ -120,7 +165,7 @@ class Agastopia {
         this.parent = parent;
         this.active = active;
         this.playing = false;
-        this.whole = true;
+        this.mounted = false;
         this.behaving = true;
         this.robbing = false;
         this.target = parent.options.targetElement;
@@ -133,7 +178,7 @@ class Agastopia {
         this.dom = createTree(this.target, this.active, this.id);
     }
     shout(event, value) {
-        this.parent.trigger(event, value);
+        this.parent.trigger(this.ref, event, value);
     }
     binder() {
         let self = this,
@@ -141,17 +186,17 @@ class Agastopia {
             video = dom.video; // dedecompose...
 
         video.onended = function() {
-            self.ended();
+            self.endedEvent();
         };
         video.ontimeupdate = function() {
             self.time();
         };
         dom.video.onvolumechange = function() {
-            self.volume();
+            self.volumeEvent();
         };
 
         video.ondurationchange = function() {
-            self.duration();
+            self.durationEvent();
         };
         dom.play.addEventListener('click', function() {
             if (self.playing) {
@@ -170,8 +215,7 @@ class Agastopia {
             self.isSeeking = false;
         });
         dom.volume.addEventListener('change', function() {
-            video.volume = dom.volume.value / 100;
-            self.updateVolumeIcon();
+            self.volume(dom.volume.value / 100);
         });
         dom.mute.addEventListener('click', function() {
             video.muted = !video.muted;
@@ -184,6 +228,8 @@ class Agastopia {
         dom.fullScreen.addEventListener('click', function() {
             self.toggleFullScreen();
         });
+        self.volumeEvent();
+
     }
     updateVolumeIcon() {
         if (this.dom.video.volume > 0.66) {
@@ -220,23 +266,26 @@ class Agastopia {
             }
         }
     }
-    ended(ref) {
+    endedEvent(ref) {
+        this.mounted = false;
         this.shout('ended');
         this.dom.play.className = 'play-control video-control';
-        this.dom.video.currentTime = 0;
         this.playing = false;
     }
     play() {
+        if (this.dom.video.src === '') {
+            return;
+        }
         this.playing = true;
         setTimeout(() => {
             this.dom.play.className = 'play-control video-control playing';
             this.dom.video.play();
-            this.duration();
+            this.durationEvent();
         }, 50);
     }
     time() {
         if (Math.floor(this.dom.video.currentTime) === this.lastTime) {
-            this.preciseTime();
+            this.preciseTimeEvent();
             return;
         }
         this.shout('time', Math.floor(this.dom.video.currentTime));
@@ -245,10 +294,10 @@ class Agastopia {
             this.dom.progress.value = this.dom.video.currentTime * 100;
         }
     }
-    preciseTime() {
+    preciseTimeEvent() {
         this.shout('timePrecise', this.dom.video.currentTime);
-    };
-    duration() {
+    }
+    durationEvent() {
         this.shout('duration', this.dom.video.duration)
         this.dom.progress.max = this.dom.video.duration * 100;
     }
@@ -257,15 +306,43 @@ class Agastopia {
         this.playing = false;
         this.dom.video.pause();
     }
-    volume() {
+    volume(vol) {
+        if (parseInt(vol) < 1) {
+            this.dom.volume.value = vol * 100;
+            this.dom.video.volume = vol;
+            this.updateVolumeIcon();
+        }
+    }
+    volumeEvent() {
         this.shout('volume', this.dom.video.volume);
         this.dom.volume.value = this.dom.video.volume * 100;
+        this.updateVolumeIcon();
     }
-    mount(src = null) {
-        if (this.dom.video.src && !src || this.dom.video.src === src) {
+    mount(obj) {
+        if (this.dom.video.src && !obj.src || this.dom.video.src === obj.src) {
             return false;
         }
-        this.dom.video.src = src;
+        if (obj.hasOwnProperty('ads') && obj.ads !== null) {
+            this.dom.controls.className = "video-control-bar hidden";
+        } else {
+            this.dom.controls.className = "video-control-bar";
+        }
+        this.mounted = true;
+        this.dom.video.src = obj.src;
+        this.dom.video.currentTime = 0;
+    }
+    show() {
+        this.active = true;
+        this.dom.container.className = "video-container";
+    }
+    hide() {
+        this.active = false;
+        this.dom.container.className = "video-container hidden";
+    }
+    toggle() {
+        this.active = !this.active;
+        let hidden = this.active ? "" : " hidden"
+        this.dom.container.className = "video-container" + hidden;
     }
 }
 

@@ -19,7 +19,8 @@
         var good = new Noisy({
             targetElement: '.player'
         });
-        good.play("big_buck_bunny.mp4");
+        good.mount([{ src: 'big_buck_bunny.mp4?1'}, { src: 'big_buck_bunny.mp4?2', ads: true }, { src: 'big_buck_bunny.mp4?3'}, { src: 'big_buck_bunny.mp4?4'}, { src: 'big_buck_bunny.mp4?5'}]);
+        good.play();
         var bad = new Noisy({
             targetElement: '.player'
         });

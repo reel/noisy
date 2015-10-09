@@ -188,10 +188,9 @@ var Noisy = (function () {
         _classCallCheck(this, Noisy);
 
         this.bootstrap(opts);
-        this.create();
         this.events();
-        // add bindings for user-provided controls
-        //this.bindEnv();
+        this.binder();
+        this.create();
     }
 
     Noisy.prototype.bootstrap = function bootstrap(opts) {
@@ -243,8 +242,33 @@ var Noisy = (function () {
         };
     };
 
-    Noisy.prototype.trigger = function trigger(event, opts) {
-        if (this.evt.hasOwnProperty(event)) {
+    Noisy.prototype.binder = function binder() {
+        var self = this;
+        this.on('volume', function (vol) {
+            self.reflect().volume(vol);
+        });
+        this.on('ended', function () {
+            if (self.delegate().playing && self.reflect().mounted) {
+                self.toggle();
+                self.reflect().dom.video.src = '';
+                self.delegate().play();
+            } else {
+                self.delegate().dom.video.src = '';
+                self.delegate().pause();
+            }
+            self.handleQueue();
+        });
+    };
+
+    Noisy.prototype.toggle = function toggle() {
+        this.delegate().toggle();
+        this.reflect().toggle();
+        this.active = this.next();
+    };
+
+    Noisy.prototype.trigger = function trigger(ref, event, opts) {
+        // prevent inactive player from bubbling...
+        if (this.evt.hasOwnProperty(event) && ref === this.active) {
             this.evt[event].forEach(function (e) {
                 return e(opts);
             });
@@ -269,7 +293,7 @@ var Noisy = (function () {
     };
 
     Noisy.prototype.reflect = function reflect() {
-        return this.players[!this.active];
+        return this.players[this.next()];
     };
 
     Noisy.prototype.next = function next() {
@@ -277,28 +301,66 @@ var Noisy = (function () {
     };
 
     Noisy.prototype.play = function play() {
-        var src = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
-
-        this.delegate().mount(src);
-        this.delegate().play();
+        this.handleQueue();
     };
 
     Noisy.prototype.pause = function pause() {
         this.delegate().play();
     };
 
-    Noisy.prototype.setVolume = function setVolume(vol) {
-        var id = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+    Noisy.prototype.mute = function mute() {
+        this.delegate().mute();
+    };
 
-        if (!id) {
-            dictate('volume', vol);
-        } else {}
+    Noisy.prototype.volume = function volume(vol) {
+        this.delegate().volume(vol);
     };
 
     Noisy.prototype.dictate = function dictate(prop, value) {
         for (i = this.players.length - 1; i >= 0; i--) {
             this.players[i][prop] = value;
         }
+    };
+
+    Noisy.prototype.mount = function mount() {
+        var playlist = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+
+        // need to add some serious checks here
+        if (playlist === null) {
+            throw 'cannot mount an empty playlist';
+        }
+        for (var _iterator = playlist, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator]();;) {
+            var _ref;
+
+            if (_isArray) {
+                if (_i >= _iterator.length) break;
+                _ref = _iterator[_i++];
+            } else {
+                _i = _iterator.next();
+                if (_i.done) break;
+                _ref = _i.value;
+            }
+
+            var _i2 = _ref;
+
+            this.queue.push(_i2);
+        }
+        this.handleQueue();
+    };
+
+    Noisy.prototype.handleQueue = function handleQueue() {
+        if (this.queue.length < 1) {
+            return;
+        }
+        if (!this.delegate().playing) {
+            this.delegate().mount(this.queue.shift());
+            this.delegate().play();
+        } else if (!this.reflect().mounted) {
+            this.reflect().mount(this.queue.shift());
+        } else {
+            return;
+        }
+        this.handleQueue();
     };
 
     return Noisy;
@@ -313,7 +375,7 @@ var Agastopia = (function () {
         this.parent = parent;
         this.active = active;
         this.playing = false;
-        this.whole = true;
+        this.mounted = false;
         this.behaving = true;
         this.robbing = false;
         this.target = parent.options.targetElement;
@@ -328,7 +390,7 @@ var Agastopia = (function () {
     };
 
     Agastopia.prototype.shout = function shout(event, value) {
-        this.parent.trigger(event, value);
+        this.parent.trigger(this.ref, event, value);
     };
 
     Agastopia.prototype.binder = function binder() {
@@ -338,17 +400,17 @@ var Agastopia = (function () {
         video = dom.video; // dedecompose...
 
         video.onended = function () {
-            self.ended();
+            self.endedEvent();
         };
         video.ontimeupdate = function () {
             self.time();
         };
         dom.video.onvolumechange = function () {
-            self.volume();
+            self.volumeEvent();
         };
 
         video.ondurationchange = function () {
-            self.duration();
+            self.durationEvent();
         };
         dom.play.addEventListener('click', function () {
             if (self.playing) {
@@ -367,8 +429,7 @@ var Agastopia = (function () {
             self.isSeeking = false;
         });
         dom.volume.addEventListener('change', function () {
-            video.volume = dom.volume.value / 100;
-            self.updateVolumeIcon();
+            self.volume(dom.volume.value / 100);
         });
         dom.mute.addEventListener('click', function () {
             video.muted = !video.muted;
@@ -381,6 +442,7 @@ var Agastopia = (function () {
         dom.fullScreen.addEventListener('click', function () {
             self.toggleFullScreen();
         });
+        self.volumeEvent();
     };
 
     Agastopia.prototype.updateVolumeIcon = function updateVolumeIcon() {
@@ -421,27 +483,30 @@ var Agastopia = (function () {
         }
     };
 
-    Agastopia.prototype.ended = function ended(ref) {
+    Agastopia.prototype.endedEvent = function endedEvent(ref) {
+        this.mounted = false;
         this.shout('ended');
         this.dom.play.className = 'play-control video-control';
-        this.dom.video.currentTime = 0;
         this.playing = false;
     };
 
     Agastopia.prototype.play = function play() {
         var _this = this;
 
+        if (this.dom.video.src === '') {
+            return;
+        }
         this.playing = true;
         setTimeout(function () {
             _this.dom.play.className = 'play-control video-control playing';
             _this.dom.video.play();
-            _this.duration();
+            _this.durationEvent();
         }, 50);
     };
 
     Agastopia.prototype.time = function time() {
         if (Math.floor(this.dom.video.currentTime) === this.lastTime) {
-            this.preciseTime();
+            this.preciseTimeEvent();
             return;
         }
         this.shout('time', Math.floor(this.dom.video.currentTime));
@@ -451,11 +516,11 @@ var Agastopia = (function () {
         }
     };
 
-    Agastopia.prototype.preciseTime = function preciseTime() {
+    Agastopia.prototype.preciseTimeEvent = function preciseTimeEvent() {
         this.shout('timePrecise', this.dom.video.currentTime);
     };
 
-    Agastopia.prototype.duration = function duration() {
+    Agastopia.prototype.durationEvent = function durationEvent() {
         this.shout('duration', this.dom.video.duration);
         this.dom.progress.max = this.dom.video.duration * 100;
     };
@@ -466,18 +531,48 @@ var Agastopia = (function () {
         this.dom.video.pause();
     };
 
-    Agastopia.prototype.volume = function volume() {
-        this.shout('volume', this.dom.video.volume);
-        this.dom.volume.value = this.dom.video.volume * 100;
+    Agastopia.prototype.volume = function volume(vol) {
+        if (parseInt(vol) < 1) {
+            this.dom.volume.value = vol * 100;
+            this.dom.video.volume = vol;
+            this.updateVolumeIcon();
+        }
     };
 
-    Agastopia.prototype.mount = function mount() {
-        var src = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+    Agastopia.prototype.volumeEvent = function volumeEvent() {
+        this.shout('volume', this.dom.video.volume);
+        this.dom.volume.value = this.dom.video.volume * 100;
+        this.updateVolumeIcon();
+    };
 
-        if (this.dom.video.src && !src || this.dom.video.src === src) {
+    Agastopia.prototype.mount = function mount(obj) {
+        if (this.dom.video.src && !obj.src || this.dom.video.src === obj.src) {
             return false;
         }
-        this.dom.video.src = src;
+        if (obj.hasOwnProperty('ads') && obj.ads !== null) {
+            this.dom.controls.className = "video-control-bar hidden";
+        } else {
+            this.dom.controls.className = "video-control-bar";
+        }
+        this.mounted = true;
+        this.dom.video.src = obj.src;
+        this.dom.video.currentTime = 0;
+    };
+
+    Agastopia.prototype.show = function show() {
+        this.active = true;
+        this.dom.container.className = "video-container";
+    };
+
+    Agastopia.prototype.hide = function hide() {
+        this.active = false;
+        this.dom.container.className = "video-container hidden";
+    };
+
+    Agastopia.prototype.toggle = function toggle() {
+        this.active = !this.active;
+        var hidden = this.active ? "" : " hidden";
+        this.dom.container.className = "video-container" + hidden;
     };
 
     return Agastopia;
