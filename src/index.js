@@ -59,6 +59,8 @@ class Noisy {
             ended: [],
             seek: [],
             time: [],
+            timePrecise: [],
+            duration: [],
             mute: [],
             volume: [],
             fullscreen: []
@@ -123,6 +125,7 @@ class Agastopia {
         this.robbing = false;
         this.target = parent.options.targetElement;
         this.dom = null;
+        this.lastTime = 0;
         this.create(this.target);
         this.binder();
     }
@@ -133,56 +136,52 @@ class Agastopia {
         this.parent.trigger(event, value);
     }
     binder() {
-        let self = this;
-        this.dom.play.addEventListener('click', function() {
+        let self = this,
+            dom = self.dom, // decompose...
+            video = dom.video; // dedecompose...
+
+        video.onended = function() {
+            self.ended();
+        };
+        video.ontimeupdate = function() {
+            self.time();
+        };
+        dom.video.onvolumechange = function() {
+            self.volume();
+        };
+
+        video.ondurationchange = function() {
+            self.duration();
+        };
+        dom.play.addEventListener('click', function() {
             if (self.playing) {
                 self.pause()
             } else {
                 self.play();
             }
         });
-        this.dom.video.ontimeupdate = function() {
-            self.shout('time', self.dom.video.currentTime);
-
-            if (!self.isSeeking) {
-                self.dom.progress.value = self.dom.video.currentTime;
-            }
-        };
-        this.dom.video.onended = function() {
-            self.hasEnded();
-        };
-        this.dom.video.onended = function() {
-            self.hasEnded();
-        };
-        this.dom.video.ondurationchange = function() {
-            self.dom.progress.max = self.dom.video.duration;
-        };
-        this.dom.progress.addEventListener('change', function() {
-            self.dom.video.currentTime = self.dom.progress.value;
+        dom.progress.addEventListener('change', function() {
+            video.currentTime = dom.progress.value / 100;
         });
-        this.dom.progress.addEventListener('mousedown', function() {
+        dom.progress.addEventListener('mousedown', function() {
             self.isSeeking = true
         });
-        this.dom.progress.addEventListener('mouseup', function() {
+        dom.progress.addEventListener('mouseup', function() {
             self.isSeeking = false;
         });
-        this.dom.video.onvolumechange = function() {
-            self.dom.volume.value = self.dom.video.volume * 100;
-        };
-        this.dom.volume.addEventListener('change', function() {
-            self.dom.video.volume = self.dom.volume.value / 100;
+        dom.volume.addEventListener('change', function() {
+            video.volume = dom.volume.value / 100;
             self.updateVolumeIcon();
         });
-        self.dom.volume.value = self.dom.video.volume * 100;
-        this.dom.mute.addEventListener('click', function() {
-            self.dom.video.muted = !self.dom.video.muted;
-            if (self.dom.video.muted) {
-                self.dom.mute.className = "sound-control video-control muted";
+        dom.mute.addEventListener('click', function() {
+            video.muted = !video.muted;
+            if (video.muted) {
+                dom.mute.className = "sound-control video-control muted";
             } else {
                 self.updateVolumeIcon();
             }
         });
-        this.dom.fullScreen.addEventListener('click', function() {
+        dom.fullScreen.addEventListener('click', function() {
             self.toggleFullScreen();
         });
     }
@@ -222,21 +221,45 @@ class Agastopia {
         }
     }
     ended(ref) {
+        this.shout('ended');
         this.dom.play.className = 'play-control video-control';
         this.dom.video.currentTime = 0;
-        this.isPlaying = false;
+        this.playing = false;
     }
     play() {
         this.playing = true;
         setTimeout(() => {
             this.dom.play.className = 'play-control video-control playing';
             this.dom.video.play();
+            this.duration();
         }, 50);
+    }
+    time() {
+        if (Math.floor(this.dom.video.currentTime) === this.lastTime) {
+            this.preciseTime();
+            return;
+        }
+        this.shout('time', Math.floor(this.dom.video.currentTime));
+        this.lastTime = Math.floor(this.dom.video.currentTime);
+        if (!self.isSeeking) {
+            this.dom.progress.value = this.dom.video.currentTime * 100;
+        }
+    }
+    preciseTime() {
+        this.shout('timePrecise', this.dom.video.currentTime);
+    };
+    duration() {
+        this.shout('duration', this.dom.video.duration)
+        this.dom.progress.max = this.dom.video.duration * 100;
     }
     pause() {
         this.dom.play.className = 'play-control video-control';
         this.playing = false;
         this.dom.video.pause();
+    }
+    volume() {
+        this.shout('volume', this.dom.video.volume);
+        this.dom.volume.value = this.dom.video.volume * 100;
     }
     mount(src = null) {
         if (this.dom.video.src && !src || this.dom.video.src === src) {
