@@ -41,6 +41,42 @@
     width: 100%;
     height: 100%;
 }
+.video-timeleft {
+    width: 9em;
+    height: 3em;
+    line-height: 3em;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    opacity: 0;
+    background-color: #2B333F;
+    background-color: rgba(43, 51, 63, 0.7);
+}
+.video-visit {
+    width: 9em;
+    height: 3em;
+    line-height: 3em;
+    position: absolute;
+    text-align: center;
+    bottom: 0;
+    right: 0;
+    opacity: 0;
+    background-color: #2B333F;
+    background-color: rgba(43, 51, 63, 0.7);
+}
+.video-has-ads {
+    opacity: 0.7;
+}
+.video-has-ads p {
+    text-align: center;
+    line-height: 1em;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.video-has-ads a {
+    text-align: center;
+    color: inherit;
+    text-decoration: none;
+}
 .video-control-bar {
     width: 100%;
     position: absolute;

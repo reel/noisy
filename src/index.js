@@ -289,6 +289,9 @@ class Agastopia {
         } else {
             this.shout('time', Math.floor(this.dom.video.currentTime));
             this.lastTime = Math.floor(this.dom.video.currentTime);
+            this.dom.timeleftvalue.innerHTML =
+                Math.floor(this.dom.video.duration - this.dom.video.currentTime) +
+                " secs.";
         }
         if (!this.isSeeking) {
             this.dom.progress.value = Math.floor(this.dom.video.currentTime * 100);
@@ -300,6 +303,9 @@ class Agastopia {
     durationEvent() {
         this.shout('duration', this.dom.video.duration)
         this.dom.progress.max = Math.floor(this.dom.video.duration * 100);
+        this.dom.timeleftvalue.innerHTML =
+            Math.floor(this.dom.video.duration - this.dom.video.currentTime) +
+            " secs.";
     }
     pause() {
         this.dom.play.className = 'play-control video-control';
@@ -324,8 +330,12 @@ class Agastopia {
         }
         if (obj.hasOwnProperty('ads') && obj.ads !== null) {
             this.dom.controls.className = "video-control-bar hidden";
+            this.dom.timeleft.className = "video-timeleft video-has-ads";
+            this.dom.visit.className = "video-visit video-has-ads"
+            this.dom.visit.innerHTML = `<a href=\"${obj.ads.url}\" target=\"_blank\">Visiter</a>`;
         } else {
             this.dom.controls.className = "video-control-bar";
+            this.dom.timeleft.className = "video-timeleft"
         }
         this.mounted = true;
         this.dom.video.src = obj.src;

@@ -96,6 +96,20 @@ var createTree = function createTree(target, active, id) {
         id: "nsyvideo" + id,
         'class': "video"
     });
+    dom.timeleft = newNode("div", dom.container, {
+        id: "nsytimeleft" + id,
+        'class': "video-timeleft"
+    });
+    dom.timeleftvalue = newNode("p", dom.timeleft, {
+        id: "nsytimeleftinner" + id
+    });
+    dom.visit = newNode("div", dom.container, {
+        id: "nsyvisit/" + id,
+        'class': "video-visit"
+    });
+    dom.visitvalue = newNode("p", dom.visit, {
+        id: "nsytimeleftinner" + id
+    });
     dom.controls = newNode("div", dom.container, {
         id: "nsycontrols" + id,
         'class': "video-control-bar"
@@ -510,6 +524,7 @@ var Agastopia = (function () {
         } else {
             this.shout('time', Math.floor(this.dom.video.currentTime));
             this.lastTime = Math.floor(this.dom.video.currentTime);
+            this.dom.timeleftvalue.innerHTML = Math.floor(this.dom.video.duration - this.dom.video.currentTime) + " secs.";
         }
         if (!this.isSeeking) {
             this.dom.progress.value = Math.floor(this.dom.video.currentTime * 100);
@@ -523,6 +538,7 @@ var Agastopia = (function () {
     Agastopia.prototype.durationEvent = function durationEvent() {
         this.shout('duration', this.dom.video.duration);
         this.dom.progress.max = Math.floor(this.dom.video.duration * 100);
+        this.dom.timeleftvalue.innerHTML = Math.floor(this.dom.video.duration - this.dom.video.currentTime) + " secs.";
     };
 
     Agastopia.prototype.pause = function pause() {
@@ -551,8 +567,12 @@ var Agastopia = (function () {
         }
         if (obj.hasOwnProperty('ads') && obj.ads !== null) {
             this.dom.controls.className = "video-control-bar hidden";
+            this.dom.timeleft.className = "video-timeleft video-has-ads";
+            this.dom.visit.className = "video-visit video-has-ads";
+            this.dom.visit.innerHTML = '<a href="' + obj.ads.url + '" target="_blank">Visiter</a>';
         } else {
             this.dom.controls.className = "video-control-bar";
+            this.dom.timeleft.className = "video-timeleft";
         }
         this.mounted = true;
         this.dom.video.src = obj.src;

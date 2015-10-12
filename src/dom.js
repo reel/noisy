@@ -11,6 +11,20 @@ var createTree = (target, active, id) => {
         id: "nsyvideo" +  id,
         class: "video"
     });
+    dom.timeleft = newNode("div", dom.container, {
+        id: "nsytimeleft" +  id,
+        class: "video-timeleft"
+    });
+    dom.timeleftvalue = newNode("p", dom.timeleft, {
+        id: "nsytimeleftinner" +  id
+    });
+    dom.visit = newNode("div", dom.container, {
+        id: "nsyvisit/" +  id,
+        class: "video-visit"
+    });
+    dom.visitvalue = newNode("p", dom.visit, {
+        id: "nsytimeleftinner" +  id
+    });
     dom.controls = newNode("div", dom.container, {
         id: "nsycontrols" +  id,
         class: "video-control-bar"
