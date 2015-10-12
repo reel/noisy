@@ -286,12 +286,12 @@ class Agastopia {
     time() {
         if (Math.floor(this.dom.video.currentTime) === this.lastTime) {
             this.preciseTimeEvent();
-            return;
+        } else {
+            this.shout('time', Math.floor(this.dom.video.currentTime));
+            this.lastTime = Math.floor(this.dom.video.currentTime);
         }
-        this.shout('time', Math.floor(this.dom.video.currentTime));
-        this.lastTime = Math.floor(this.dom.video.currentTime);
-        if (!self.isSeeking) {
-            this.dom.progress.value = this.dom.video.currentTime * 100;
+        if (!this.isSeeking) {
+            this.dom.progress.value = Math.floor(this.dom.video.currentTime * 100);
         }
     }
     preciseTimeEvent() {
@@ -299,7 +299,7 @@ class Agastopia {
     }
     durationEvent() {
         this.shout('duration', this.dom.video.duration)
-        this.dom.progress.max = this.dom.video.duration * 100;
+        this.dom.progress.max = Math.floor(this.dom.video.duration * 100);
     }
     pause() {
         this.dom.play.className = 'play-control video-control';

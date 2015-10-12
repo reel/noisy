@@ -426,12 +426,12 @@ var Agastopia = (function () {
     Agastopia.prototype.time = function time() {
         if (Math.floor(this.dom.video.currentTime) === this.lastTime) {
             this.preciseTimeEvent();
-            return;
+        } else {
+            this.shout('time', Math.floor(this.dom.video.currentTime));
+            this.lastTime = Math.floor(this.dom.video.currentTime);
         }
-        this.shout('time', Math.floor(this.dom.video.currentTime));
-        this.lastTime = Math.floor(this.dom.video.currentTime);
-        if (!self.isSeeking) {
-            this.dom.progress.value = this.dom.video.currentTime * 100;
+        if (!this.isSeeking) {
+            this.dom.progress.value = Math.floor(this.dom.video.currentTime * 100);
         }
     };
 
@@ -441,7 +441,7 @@ var Agastopia = (function () {
 
     Agastopia.prototype.durationEvent = function durationEvent() {
         this.shout('duration', this.dom.video.duration);
-        this.dom.progress.max = this.dom.video.duration * 100;
+        this.dom.progress.max = Math.floor(this.dom.video.duration * 100);
     };
 
     Agastopia.prototype.pause = function pause() {
@@ -544,7 +544,6 @@ var setElement = function setElement() {
 
     var element = document.createElement(type);
     if (opts === null) {
-        console.log('nothing ' + type);
         return element;
     }
     for (var key in opts) {

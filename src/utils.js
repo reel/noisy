@@ -27,7 +27,6 @@ var randomizer = () => { return  "nsy" + Math.random().toString(36).substring(7)
 var setElement = (type = "div", opts = null) => {
     let element = document.createElement(type);
     if (opts === null) {
-        console.log('nothing ' + type);
         return element;
     }
     for (var key in opts) {
