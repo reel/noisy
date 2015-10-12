@@ -1,3 +1,18 @@
+<a name="0.0.4"></a>
+## [0.0.4](//compare/v0.0.3...v0.0.4) (2015-10-12)
+
+
+### Bug Fixes
+
+* **progress:** stuff was not updated properly. f700aa2
+
+### Features
+
+* **ads:** adding bottom info f724ce5
+* **remote:** add remote links to test page c450e95
+
+
+
 <a name="0.0.3"></a>
 ## [0.0.3](//compare/v0.0.2...v0.0.3) (2015-10-09)
 
