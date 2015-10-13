@@ -7,7 +7,7 @@ module.exports = function(grunt) {
         pkg: grunt.file.readJSON('package.json'),
         uglify: {
             options: {
-                banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n',
+                banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd H:MM") %> */\n',
                 compress: {
                     dead_code: true,
                     drop_debugger: true,
@@ -155,10 +155,12 @@ module.exports = function(grunt) {
         grunt.loadNpmTasks('grunt-eslint');
         grunt.loadNpmTasks('grunt-browserify');
         grunt.loadNpmTasks('grunt-contrib-jasmine');
+        grunt.loadNpmTasks('grunt-contrib-uglify');
         grunt.task.run(
             'css',
             'eslint',
-            'browserify'
+            'browserify',
+            'uglify'
             //'jasmine:pivotal'
         );
     });

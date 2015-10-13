@@ -145,7 +145,7 @@ var Noisy = (function () {
         }
         this.ready = this.id;
         this.players = [];
-        this.active = null;
+        this.active = false;
         this.whole = true;
         this.queue = [];
         this.behaving = true;
@@ -188,6 +188,7 @@ var Noisy = (function () {
             } else {
                 self.delegate().dom.video.src = '';
                 self.delegate().pause();
+                this.active = false;
             }
             self.handleQueue();
         });
@@ -234,11 +235,11 @@ var Noisy = (function () {
     };
 
     Noisy.prototype.play = function play() {
-        this.handleQueue();
+        this.delegate().play();
     };
 
     Noisy.prototype.pause = function pause() {
-        this.delegate().play();
+        this.delegate().pause();
     };
 
     Noisy.prototype.mute = function mute() {
@@ -417,6 +418,9 @@ var Agastopia = (function () {
     };
 
     Agastopia.prototype.endedEvent = function endedEvent(ref) {
+        if (this.media.hasOwnProperty('after') && typeof this.media.after === 'function') {
+            this.media.after();
+        }
         this.mounted = false;
         this.shout('ended');
         this.dom.play.className = 'play-control video-control';
@@ -429,6 +433,10 @@ var Agastopia = (function () {
         if (this.dom.video.src === '') {
             return;
         }
+        if (this.media.hasOwnProperty('before') && typeof this.media.before === 'function') {
+            this.media.before();
+        }
+        this.parent.playing = true;
         this.playing = true;
         setTimeout(function () {
             _this.dom.play.className = 'play-control video-control playing';
@@ -484,17 +492,19 @@ var Agastopia = (function () {
         if (this.dom.video.src && !obj.src || this.dom.video.src === obj.src) {
             return false;
         }
-        if (obj.hasOwnProperty('ads') && obj.ads !== null) {
+        this.media = obj;
+        if (this.media.hasOwnProperty('ads') && this.media.ads !== null) {
             this.dom.controls.className = "video-control-bar hidden";
             this.dom.timeleft.className = "video-timeleft video-has-ads";
             this.dom.visit.className = "video-visit video-has-ads";
-            this.dom.visit.innerHTML = '<a href="' + obj.ads.url + '" target="_blank">Visiter</a>';
+            this.dom.visit.innerHTML = '<a href="' + this.media.ads.clickthrough + '" target="_blank">Visiter</a>';
         } else {
             this.dom.controls.className = "video-control-bar";
             this.dom.timeleft.className = "video-timeleft";
+            this.dom.visit.className = "video-visit";
         }
         this.mounted = true;
-        this.dom.video.src = obj.src;
+        this.dom.video.src = this.media.src;
         this.dom.video.currentTime = 0;
     };
 

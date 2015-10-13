@@ -11,9 +11,11 @@
     height: 361px;
     position: relative;
     color: #fff;
-    background-color: #000;
+    background-color: transparent;
     font-size: 10px;
     line-height: 1;
+    text-align: left !important;
+    margin: 0 auto;
     font-weight: normal;
     font-style: normal;
     font-family: Arial, Helvetica, sans-serif;
@@ -69,7 +71,7 @@
 }
 .video-has-ads p {
     text-align: center;
-    line-height: 1em;
+    line-height: 3em;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 .video-has-ads a {

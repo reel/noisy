@@ -19,14 +19,32 @@
         var good = new Noisy({
             targetElement: '.player'
         });
-        good.mount([
-            { src: 'http://cdn001.podboxx.com/get/9Mw8jdXesCSWSX4jC.mp4'},
-            { src: 'http://cdn001.podboxx.com/get/tH4arZPmZT2ksysDr.mp4', ads: {url: "http://www.google.com/"} },
-            { src: 'http://cdn001.podboxx.com/get/9Mw8jdXesCSWSX4jC.mp4?3'},
-            { src: 'http://cdn001.podboxx.com/get/tH4arZPmZT2ksysDr.mp4?4'},
-            { src: 'http://cdn001.podboxx.com/get/9Mw8jdXesCSWSX4jC.mp4?5'}]);
+        good.mount([{
+            src: 'http://cdn001.podboxx.com/get/9Mw8jdXesCSWSX4jC.mp4',
+            before: function() {
+                console.log('before')
+            },
+            after: function() {
+                console.log('after...')
+            }
+        }, {
+            src: "http://cdn001.podboxx.com/get/7x9ytMP5b2Au8m6zh.mp4",
+            ads: {
+                clickthrough: "http://staging.podboxx.com",
+                name: "Blue 15s",
+                report: "http://api.podboxx.com/ads/7cj7sLDNywEPg7NdM/report.gif"
+            }
+        }, {
+            src: 'http://cdn001.podboxx.com/get/9Mw8jdXesCSWSX4jC.mp4?3'
+        }, {
+            src: 'http://cdn001.podboxx.com/get/tH4arZPmZT2ksysDr.mp4?4',
+            after: function() {
+                console.log('after...!!!')
+            }
+        }, {
+            src: 'http://cdn001.podboxx.com/get/9Mw8jdXesCSWSX4jC.mp4?5'
+        }]);
         good.play();
-
     </script>
 </body>
 
